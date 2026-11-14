@@ -1,0 +1,24 @@
+services:
+  foundry:
+    build: .
+    image: mcp-foundry
+    ports:
+      - "8099:8099"
+    environment:
+      # Safety limits (see app/guards.py) — tune as needed.
+      MCPF_MAX_UPLOAD_MB: "50"
+      MCPF_MAX_EXTRACTED_MB: "200"
+      MCPF_MAX_REPO_MB: "200"
+      MCPF_MAX_FILES: "20000"
+      MCPF_CLONE_TIMEOUT: "120"
+      MCPF_ANALYSIS_TTL: "3600"
+      MCPF_MAX_ANALYSES: "200"
+      # Optional: enables the AI deep-report mode.
+      # ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8099/api/health',timeout=4).status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

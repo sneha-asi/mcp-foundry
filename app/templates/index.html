@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MCP Foundry — turn any codebase into an MCP server</title>
+<style>
+  :root{
+    --bg:#0d0f17; --surface:#151823; --surface2:#1c2030; --line:#272c3d;
+    --text:#e7e9f0; --muted:#9aa0b4; --faint:#6b7186;
+    --accent:#7c6cff; --accent2:#5a8bff;
+    --read:#1d9e75; --read-bg:#0f3a2d;
+    --write:#d99a1a; --write-bg:#3a2e0f;
+    --destructive:#e2504f; --destructive-bg:#3a1414;
+    --sensitive:#c44ea0; --sensitive-bg:#360f2a;
+    --radius:12px; --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header{padding:28px 0 18px;display:flex;align-items:center;gap:12px}
+  .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-weight:700;font-size:18px;color:#fff}
+  .brand{font-weight:600;font-size:18px;letter-spacing:-.01em}
+  .brand small{display:block;font-weight:400;font-size:12.5px;color:var(--muted);letter-spacing:0}
+  .hero{padding:34px 0 8px}
+  .hero h1{font-size:30px;line-height:1.15;margin:0 0 10px;letter-spacing:-.02em;font-weight:650}
+  .hero h1 .g{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .hero p{color:var(--muted);font-size:15.5px;margin:0;max-width:620px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px}
+  .seg{display:inline-flex;background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:3px;margin-bottom:16px}
+  .seg button{background:none;border:0;color:var(--muted);font:inherit;font-size:13.5px;padding:7px 14px;border-radius:7px;cursor:pointer}
+  .seg button.on{background:var(--accent);color:#fff}
+  label.fld{display:block;font-size:12.5px;color:var(--muted);margin:0 0 6px}
+  input[type=text]{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:9px;color:var(--text);font:inherit;font-size:14.5px;padding:11px 13px}
+  input[type=text]:focus{outline:none;border-color:var(--accent)}
+  .drop{border:1.5px dashed var(--line);border-radius:10px;padding:30px;text-align:center;color:var(--muted);cursor:pointer;transition:.15s}
+  .drop.drag{border-color:var(--accent);background:var(--surface2);color:var(--text)}
+  .row{display:flex;gap:12px;align-items:flex-end}
+  .btn{background:var(--accent);color:#fff;border:0;border-radius:9px;font:inherit;font-size:14px;font-weight:550;padding:11px 18px;cursor:pointer;white-space:nowrap}
+  .btn:hover{filter:brightness(1.08)} .btn:disabled{opacity:.5;cursor:default}
+  .btn.ghost{background:var(--surface2);border:1px solid var(--line);color:var(--text)}
+  .muted{color:var(--muted)} .faint{color:var(--faint)}
+  .hidden{display:none}
+  .err{background:var(--destructive-bg);border:1px solid var(--destructive);color:#ffb4b3;border-radius:9px;padding:11px 13px;font-size:13.5px;margin-top:14px}
+  .summary{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 6px}
+  .chip{background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-size:13px}
+  .chip b{font-weight:600}
+  .md{margin-top:6px;font-size:14.5px;color:var(--text)}
+  .md h2{font-size:16px;margin:20px 0 8px;color:var(--text)}
+  .md h3{font-size:14px;margin:16px 0 6px;color:var(--muted)}
+  .md p{margin:8px 0}
+  .md ul{margin:8px 0;padding-left:20px}
+  .md li{margin:3px 0}
+  .md code{background:var(--surface2);border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-family:var(--mono);font-size:12.5px}
+  .md pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto}
+  .md pre code{background:none;border:0;padding:0}
+  .md a{color:var(--accent2)} .md strong{color:var(--text)}
+  .grp{margin-top:18px}
+  .grp h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 8px;display:flex;align-items:center;gap:8px}
+  .cap{display:flex;gap:12px;align-items:flex-start;padding:11px 13px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:var(--surface)}
+  .cap input[type=checkbox]{margin-top:3px;width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+  .cap .nm{font-family:var(--mono);font-size:13.5px;font-weight:600}
+  .cap .sm{font-size:13px;color:var(--muted);margin-top:2px}
+  .cap .meta{font-size:11.5px;color:var(--faint);font-family:var(--mono);margin-top:4px}
+  .badge{font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;white-space:nowrap;margin-left:auto}
+  .b-read{color:#5fe0b0;background:var(--read-bg)} .b-write{color:#f3c969;background:var(--write-bg)}
+  .b-destructive{color:#ff8a89;background:var(--destructive-bg)} .b-sensitive{color:#f29fd6;background:var(--sensitive-bg)}
+  .cfg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:18px 0}
+  select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:9px;color:var(--text);font:inherit;font-size:14px;padding:10px 12px}
+  pre{background:#0a0c12;border:1px solid var(--line);border-radius:10px;padding:14px;overflow:auto;font-family:var(--mono);font-size:12.5px;line-height:1.55;max-height:340px;margin:0}
+  .tabs{display:flex;gap:6px;margin-bottom:8px}
+  .tabs button{background:var(--surface2);border:1px solid var(--line);color:var(--muted);border-radius:7px;font:inherit;font-size:12.5px;padding:6px 11px;cursor:pointer}
+  .tabs button.on{background:var(--accent);color:#fff;border-color:transparent}
+  .spin{display:inline-block;width:15px;height:15px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:s .7s linear infinite;vertical-align:-2px;margin-right:7px}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .step-h{font-size:18px;font-weight:600;margin:0 0 4px;letter-spacing:-.01em}
+  .copybar{display:flex;justify-content:space-between;align-items:center;margin:16px 0 6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">⛭</div>
+    <div class="brand">MCP Foundry<small>turn any codebase into an MCP server</small></div>
+  </header>
+
+  <section class="hero">
+    <h1>Point it at your code.<br>Get a <span class="g">working MCP server</span> back.</h1>
+    <p>Paste a GitHub repo or upload your code. Foundry discovers what it can do, you pick which capabilities to expose, and it hands you a runnable server your agents can call — in minutes.</p>
+  </section>
+
+  <!-- STEP 1 -->
+  <div class="card" id="step1" style="margin-top:22px">
+    <div class="seg">
+      <button id="tab-url" class="on" onclick="setMode('url')">GitHub URL</button>
+      <button id="tab-up" onclick="setMode('up')">Upload code</button>
+    </div>
+    <div id="mode-url">
+      <label class="fld">Git repository URL</label>
+      <div class="row">
+        <input type="text" id="repoUrl" placeholder="https://github.com/owner/project" />
+        <button class="btn" id="goUrl" onclick="analyze()">Analyze</button>
+      </div>
+      <div id="ghConnect" style="margin-top:10px"></div>
+      <div id="tokenField">
+        <label class="fld" style="margin-top:10px">Private repo? Access token <span class="faint">(optional — used only to clone, never stored)</span></label>
+        <input type="password" id="repoToken" placeholder="ghp_… (GitHub personal access token)" autocomplete="off" />
+      </div>
+    </div>
+    <div id="mode-up" class="hidden">
+      <label class="fld">Upload a .zip of your codebase</label>
+      <div class="drop" id="drop">Drop a <b>.zip</b> here, or click to choose<div class="faint" id="fileName" style="margin-top:6px"></div></div>
+      <input type="file" id="fileIn" accept=".zip" class="hidden" />
+      <div style="margin-top:12px"><button class="btn" id="goUp" onclick="analyze()" disabled>Analyze upload</button></div>
+    </div>
+    <div id="err1"></div>
+  </div>
+
+  <!-- DEEP REPORT -->
+  <div class="card hidden" id="reportCard" style="margin-top:18px">
+    <div class="copybar">
+      <p class="step-h" style="margin:0">Understand this codebase</p>
+      <button class="btn" id="repBtn" onclick="genReport()">Generate deep report</button>
+    </div>
+    <p class="muted" style="margin:6px 0 0;font-size:14px">A narrative read of the repo — architecture, how it works, key modules, and where to start building on top. <span class="faint">Uses Claude when ANTHROPIC_API_KEY is set; structural report otherwise.</span></p>
+    <div class="summary" id="reportStats"></div>
+    <div id="reportBody" class="md"></div>
+    <div id="errR"></div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="card hidden" id="step2" style="margin-top:18px">
+    <p class="step-h">Curate the surface</p>
+    <p class="muted" style="margin:0;font-size:14px">Read-only capabilities are pre-selected. Writes and <b>destructive</b> ops are opt-in — turn on only what you trust an agent to call.</p>
+    <div class="summary" id="summary"></div>
+    <div id="caps"></div>
+
+    <div class="cfg">
+      <div><label class="fld">Server name</label><input type="text" id="srvName" value="my-mcp" /></div>
+      <div><label class="fld">Invocation</label><select id="invoc"><option value="http">HTTP proxy (calls a running API)</option><option value="in_process">In-process (imports the code)</option></select></div>
+      <div id="baseEnvWrap"><label class="fld">API base-URL env var</label><input type="text" id="baseEnv" value="TARGET_API_URL" /></div>
+    </div>
+    <div class="row" style="justify-content:flex-end">
+      <span class="muted" id="selCount" style="margin-right:auto;font-size:13px"></span>
+      <button class="btn ghost" onclick="resetAll()">Start over</button>
+      <button class="btn" id="genBtn" onclick="generate()">Generate server</button>
+    </div>
+    <div id="err2"></div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="card hidden" id="step3" style="margin-top:18px">
+    <div class="copybar">
+      <p class="step-h" style="margin:0">Your MCP server</p>
+      <button class="btn" id="dlBtn" onclick="downloadZip()">Download .zip</button>
+    </div>
+    <div class="tabs" id="fileTabs"></div>
+    <pre id="fileView"></pre>
+    <p class="muted" style="font-size:13px;margin:14px 0 0">Connect it: drop the snippet from <code>.mcp.json</code> into your Claude Code <code>.mcp.json</code>, set the env vars from the README, and restart. <span class="faint">Managed one-click hosting is coming next.</span></p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// --- auth (optional, Supabase) --------------------------------------------------------
+// Injects the access token into all /api/ calls; if auth is enabled server-side and there's
+// no session, a magic-link login overlay gates the app. Open mode (no Supabase config) = no gate.
+let ACCESS_TOKEN = null, SB = null;
+const _origFetch = window.fetch.bind(window);
+window.fetch = (url, opts = {}) => {
+  if (ACCESS_TOKEN && typeof url === 'string' && url.startsWith('/api/')) {
+    opts.headers = { ...(opts.headers || {}), Authorization: 'Bearer ' + ACCESS_TOKEN };
+  }
+  return _origFetch(url, opts);
+};
+(async () => {
+  let cfg; try { cfg = await _origFetch('/api/config').then(r => r.json()); } catch (_) { return; }
+  if (!cfg || !cfg.auth_enabled) return;                 // open mode — no login required
+  if (!window.supabase) { console.warn('supabase-js failed to load'); return; }
+  SB = window.supabase.createClient(cfg.supabase_url, cfg.supabase_anon_key);
+  const { data: { session } } = await SB.auth.getSession();
+  SB.auth.onAuthStateChange((_e, s) => { ACCESS_TOKEN = s?.access_token || null; if (s) _hideLogin(); });
+  if (session) { ACCESS_TOKEN = session.access_token; } else { _showLogin(); }
+})();
+function _hideLogin() { const o = document.getElementById('loginOverlay'); if (o) o.remove(); }
+function _showLogin() {
+  if (document.getElementById('loginOverlay')) return;
+  const o = document.createElement('div'); o.id = 'loginOverlay';
+  o.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,16,.92);display:flex;align-items:center;justify-content:center;z-index:9999';
+  o.innerHTML = `<div style="background:#151823;border:1px solid #272c3d;border-radius:14px;padding:28px;width:340px;text-align:center;color:#e7e9f0;font-family:-apple-system,system-ui,sans-serif">
+    <div style="font-size:18px;font-weight:600;margin-bottom:6px">Sign in to MCP Foundry</div>
+    <div style="font-size:13px;color:#9aa0b4;margin-bottom:16px">We'll email you a magic link.</div>
+    <input id="loginEmail" type="email" placeholder="you@company.com" style="width:100%;background:#0d0f17;border:1px solid #272c3d;border-radius:9px;color:inherit;font:inherit;padding:11px 13px;margin-bottom:10px"/>
+    <button id="loginBtn" style="width:100%;background:#7c6cff;color:#fff;border:0;border-radius:9px;font:inherit;font-weight:550;padding:11px;cursor:pointer">Send magic link</button>
+    <div id="loginMsg" style="font-size:12.5px;color:#9aa0b4;margin-top:10px"></div></div>`;
+  document.body.appendChild(o);
+  document.getElementById('loginBtn').onclick = async () => {
+    const email = document.getElementById('loginEmail').value.trim();
+    const msg = document.getElementById('loginMsg');
+    if (!email) { msg.textContent = 'Enter your email.'; return; }
+    msg.textContent = 'Sending…';
+    const { error } = await SB.auth.signInWithOtp({ email, options: { emailRedirectTo: location.href } });
+    msg.textContent = error ? ('Error: ' + error.message) : 'Check your email for the sign-in link.';
+  };
+}
+// --- github oauth status -------------------------------------------------------------
+(async () => {
+  let st; try { st = await _origFetch('/api/github/status').then(r => r.json()); } catch (_) { return; }
+  const box = document.getElementById('ghConnect');
+  if (!box || !st.enabled) return;            // OAuth not configured — keep the manual token field
+  if (st.connected) {
+    box.innerHTML = '<span style="font-size:13px;color:#5fe0b0">✓ GitHub connected — private repos enabled</span>';
+    const tf = document.getElementById('tokenField'); if (tf) tf.style.display = 'none';
+  } else {
+    box.innerHTML = '<a href="/auth/github/login" class="btn ghost" style="display:inline-block;text-decoration:none;font-size:13px">Connect GitHub</a> <span class="faint" style="font-size:12.5px">to clone private repos</span>';
+  }
+})();
+// --- end auth -------------------------------------------------------------------------
+let MODE='url', FILE=null, ANALYSIS=null, CAPS=[], GENFILES=null, ACTIVE_FILE=null;
+const $=id=>document.getElementById(id);
+
+function setMode(m){MODE=m;
+  $('tab-url').classList.toggle('on',m==='url'); $('tab-up').classList.toggle('on',m==='up');
+  $('mode-url').classList.toggle('hidden',m!=='url'); $('mode-up').classList.toggle('hidden',m!=='up');
+}
+$('invoc').addEventListener('change',()=>{ $('baseEnvWrap').style.opacity = $('invoc').value==='http'?'1':'.4'; });
+
+const drop=$('drop'), fileIn=$('fileIn');
+drop.onclick=()=>fileIn.click();
+fileIn.onchange=()=>pickFile(fileIn.files[0]);
+;['dragover','dragenter'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.add('drag')}));
+;['dragleave','drop'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.remove('drag')}));
+drop.addEventListener('drop',ev=>pickFile(ev.dataTransfer.files[0]));
+function pickFile(f){ if(!f)return; FILE=f; $('fileName').textContent=f.name; $('goUp').disabled=false; }
+
+function showErr(el,msg){ $(el).innerHTML = msg?`<div class="err">${msg}</div>`:''; }
+
+async function analyze(){
+  showErr('err1','');
+  const fd=new FormData();
+  if(MODE==='url'){ const u=$('repoUrl').value.trim(); if(!u){showErr('err1','Enter a repo URL.');return;} fd.append('repo_url',u); const tk=$('repoToken')?.value.trim(); if(tk) fd.append('repo_token',tk); }
+  else { if(!FILE){showErr('err1','Choose a .zip first.');return;} fd.append('file',FILE); }
+  const btn = MODE==='url'?$('goUrl'):$('goUp'); const old=btn.innerHTML; btn.disabled=true; btn.innerHTML='<span class="spin"></span>Analyzing';
+  try{
+    const r=await fetch('/api/analyze',{method:'POST',body:fd});
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.detail||'analysis failed');
+    ANALYSIS=d.analysis_id; CAPS=d.capabilities||[];
+    renderResults(d);
+  }catch(e){ showErr('err1',e.message); }
+  finally{ btn.disabled=false; btn.innerHTML=old; }
+}
+
+const RISK_ORDER=['read','write','sensitive','destructive'];
+const RISK_LABEL={read:'Read-only',write:'Writes',sensitive:'Sensitive',destructive:'Destructive'};
+function renderResults(d){
+  const p=d.project||{};
+  CAPS = d.capabilities||[];                 // keep the global in sync for other handlers
+  $('summary').innerHTML =
+    `<div class="chip"><b>${(p.language||'?')}</b> <span class="muted">language</span></div>`+
+    `<div class="chip"><b>${(p.frameworks||[]).join(', ')||'—'}</b> <span class="muted">frameworks</span></div>`+
+    `<div class="chip"><b>${CAPS.length}</b> <span class="muted">capabilities</span></div>`+
+    `<div class="chip"><b>${(d.excluded||[]).length}</b> <span class="muted">excluded</span></div>`;
+  // default invocation from first capability
+  if(CAPS[0] && CAPS[0].invocation) $('invoc').value=CAPS[0].invocation;
+  $('baseEnvWrap').style.opacity = $('invoc').value==='http'?'1':'.4';
+
+  const byRisk={}; CAPS.forEach(c=>{(byRisk[c.risk]=byRisk[c.risk]||[]).push(c)});
+  let html='';
+  RISK_ORDER.forEach(rk=>{ const list=byRisk[rk]; if(!list||!list.length)return;
+    html+=`<div class="grp"><h3><span class="badge b-${rk}">${RISK_LABEL[rk]}</span><span class="faint">${list.length}</span></h3>`;
+    list.forEach(c=>{
+      const checked = c.recommended ? 'checked':'';
+      const params=(c.params||[]).map(pp=>pp.name+(pp.required?'':'?')).join(', ');
+      const meta = c.http ? `${c.http.method} ${c.http.path}` : `${c.location||''}`;
+      html+=`<label class="cap"><input type="checkbox" data-id="${c.id}" ${checked} onchange="updateCount()">`+
+        `<div style="flex:1"><div class="nm">${c.name}</div>`+
+        `<div class="sm">${c.summary||''}</div>`+
+        `<div class="meta">${meta}${params?'  ·  ('+params+')':''}</div></div>`+
+        `<span class="badge b-${rk}">${rk}</span></label>`;
+    });
+    html+='</div>';
+  });
+  $('caps').innerHTML=html;
+  $('step1').classList.add('hidden'); $('step2').classList.remove('hidden'); $('step3').classList.add('hidden');
+  $('reportCard').classList.remove('hidden'); $('reportBody').innerHTML=''; $('reportStats').innerHTML='';
+  updateCount();
+}
+
+async function genReport(){
+  if(!ANALYSIS){ showErr('errR','Analyze a repo first.'); return; }
+  showErr('errR','');
+  const b=$('repBtn'); const old=b.innerHTML; b.disabled=true; b.innerHTML='<span class="spin"></span>Reading the code';
+  try{
+    const r=await fetch('/api/report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({analysis_id:ANALYSIS})});
+    const d=await r.json(); if(!r.ok) throw new Error(d.detail||'report failed');
+    renderReport(d);
+  }catch(e){ showErr('errR',e.message); }
+  finally{ b.disabled=false; b.innerHTML=old; }
+}
+function renderReport(d){
+  const s=d.stats||{};
+  $('reportStats').innerHTML =
+    `<div class="chip"><b>${s.language||'?'}</b> <span class="muted">language</span></div>`+
+    `<div class="chip"><b>${(s.frameworks||[]).join(', ')||'—'}</b> <span class="muted">frameworks</span></div>`+
+    `<div class="chip"><b>${s.files??'?'}</b> <span class="muted">files</span></div>`+
+    `<div class="chip"><b>${s.capabilities??0}</b> <span class="muted">capabilities</span></div>`+
+    `<div class="chip"><b>${d.mode==='ai'?'AI':'structural'}</b> <span class="muted">mode</span></div>`;
+  const note = d.note?`<div class="muted" style="margin:10px 0 0;font-size:13px">${d.note}</div>`:'';
+  const md = window.marked ? marked.parse(d.markdown||'') : `<pre>${(d.markdown||'').replace(/[&<]/g,c=>c==='&'?'&amp;':'&lt;')}</pre>`;
+  $('reportBody').innerHTML = note + md;
+  $('reportBody').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function selectedIds(){ return [...document.querySelectorAll('#caps input:checked')].map(x=>x.dataset.id); }
+function updateCount(){ $('selCount').textContent = selectedIds().length+' selected'; }
+
+async function generate(){
+  showErr('err2','');
+  const ids=selectedIds(); if(!ids.length){showErr('err2','Select at least one capability.');return;}
+  const body=reqBody(ids);
+  const b=$('genBtn'); const old=b.innerHTML; b.disabled=true; b.innerHTML='<span class="spin"></span>Generating';
+  try{
+    const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json(); if(!r.ok) throw new Error(d.detail||'generation failed');
+    GENFILES=d.files; renderFiles();
+    $('step3').classList.remove('hidden'); $('step3').scrollIntoView({behavior:'smooth'});
+  }catch(e){ showErr('err2',e.message); }
+  finally{ b.disabled=false; b.innerHTML=old; }
+}
+function reqBody(ids){ return {analysis_id:ANALYSIS,server_name:$('srvName').value.trim()||'my-mcp',
+  invocation:$('invoc').value, selected_ids:ids, base_url_env:$('baseEnv').value.trim()||'TARGET_API_URL'}; }
+
+function renderFiles(){
+  const names=Object.keys(GENFILES);
+  const order=['server.py','.mcp.json','README.md','CAPABILITIES.md','requirements.txt'];
+  names.sort((a,b)=>order.indexOf(a)-order.indexOf(b));
+  ACTIVE_FILE=names[0];
+  $('fileTabs').innerHTML=names.map(n=>`<button class="${n===ACTIVE_FILE?'on':''}" onclick="showFile('${n}')">${n}</button>`).join('');
+  $('fileView').textContent=GENFILES[ACTIVE_FILE];
+}
+function showFile(n){ ACTIVE_FILE=n; $('fileView').textContent=GENFILES[n];
+  [...$('fileTabs').children].forEach(b=>b.classList.toggle('on',b.textContent===n)); }
+
+async function downloadZip(){
+  const ids=selectedIds(); const body=reqBody(ids);
+  const r=await fetch('/api/download',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok){ const d=await r.json().catch(()=>({})); showErr('err2',d.detail||'download failed'); return; }
+  const blob=await r.blob(); const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=(body.server_name||'mcp-server')+'-mcp.zip'; a.click();
+  URL.revokeObjectURL(url);
+}
+function resetAll(){ ANALYSIS=null;CAPS=[];GENFILES=null;FILE=null;$('fileName').textContent='';$('goUp').disabled=true;
+  $('repoUrl').value=''; $('step2').classList.add('hidden'); $('step3').classList.add('hidden'); $('step1').classList.remove('hidden');
+  $('reportCard').classList.add('hidden'); $('reportBody').innerHTML=''; $('reportStats').innerHTML='';
+  window.scrollTo({top:0,behavior:'smooth'}); }
+</script>
+</body>
+</html>
